@@ -1,22 +1,24 @@
-function data = Preprocessing(garrfile, mousename,intanfile)
-% Preprocessing(garrfile, mousename,intanfile)
+function data = Preprocessing(mouseName,garrFile,intanFolder)
+% Preprocessing(mouseName,garrFile,intanFolder)
 % reads garr and intan and saves them as useful variables aligned with the
 % right time stamps
-%   mousename: name of mouse (string)
-%   garrfile: name of file where garr mat data is stored (string)
-%   intanfile: name of file where intan data is stored (string)
+%   mouseName: name of mouse (string)
+%   garrFile: name of file where garr mat data is stored (string)
+%   intanFolder: name of file where intan data is stored (string)
 % RL 11/2024
 
 %% load variables
 
-% mousename = "MS13B";
-% garrfile = 'dis_vel_rew_2024-7-25_19_14_21_MS13B_REC_BASE.mat';
-% intanfile = 'W:\mouse_chemogenetics\MS13B\MS13B_240725_175414';
-% mousename = "MS14A";
-% garrfile = 'dis_vel_rew_2024-9-6_18_11_35_MS14_REC.mat';
-% intanfile = 'W:\mouse_chemogenetics\MS14A\MS14A_240906_162727';
+% mouseName = "MS13B";
+% garrFile = "dis_vel_rew_2024-7-25_19_14_21_MS13B_REC_BASE.mat";
+% intanFolder = 'W:\mouse_chemogenetics\MS13B\MS13B_240725_175414';
+% mouseName = "MS14A";
+% garrFile = "dis_vel_rew_2024-9-6_18_11_35_MS14_REC.mat";
+% intanFolder = 'W:\mouse_chemogenetics\MS14A\MS14A_240906_162727';
 
-load(garrfile, 'garr', 'adata');
+mkdir Preprocess_figures % To store saved figures
+
+load(garrFile, 'garr', 'adata');
 
 if garr(end,1) == 0
     garr(end,:) = [];
@@ -24,9 +26,10 @@ end
 
 % Parameters
 samplerate = 30;
+nBin = 100;
 
 % Extract date from file name
-[~,fdate] = fileparts(garrfile);
+[~,fdate] = fileparts(garrFile);
 fdate = strtok(fdate(13:22), '_');
 
 environment = garr(:,7);
@@ -43,7 +46,7 @@ pos_raw = garr(:,5); % position in laps (based on VR)
 poscm_raw = pos_raw*VRradius*2*pi;
 pos = mod(pos_raw,1);
 poscm = pos*VRradius*2*pi;
-posBin = floor(pos*100) + 1;
+posBin = floor(pos*nBin) + 1;
 
 samples = [0:size(garr,1)-1]';
 vel = [0; diff(poscm_raw)] * samplerate; % Velocity (cm/s)
@@ -75,7 +78,7 @@ for lap_no = 1:nLap
 end
 lap(lapEnd_idx(end)+1:end) = NaN;
 
-dataLap_all = [lap posBin ts pos poscm vel vel_smoothed reward licks objectChanges];
+dataLap_all = [lap posBin ts pos poscm vel vel_smoothed reward licks objectChanges environment];
 
 % Need movement data only (zero velocity)
 posChange = (diff(dataLap_all(:,4)) ~= 0);
@@ -83,16 +86,14 @@ posChange = (diff(dataLap_all(:,4)) ~= 0);
 nonzeroVel_idx = logical([posChange; 0]);
 dataLap = dataLap_all(nonzeroVel_idx,:);
 
-% TO DO - Keep non-movement data and store somewhere
-
 % Align timestamps with Intan
 ori = pwd;
-cd(intanfile);
-digIn = readNPY(mousename + "-digIn.npy");
-digInts = readNPY(mousename + "-digInts.npy");
-% lfp = readNPY(mousename + "-lfp.npy");
-% lfpts = readNPY(mousename + "-lfpts.npy");
-intants = loadintants(mousename + "-digIn.npy");
+cd(intanFolder);
+digIn = readNPY(mouseName + "-digIn.npy");
+digInts = readNPY(mouseName + "-digInts.npy");
+% lfp = readNPY(mouseName + "-lfp.npy");
+% lfpts = readNPY(mouseName + "-lfpts.npy");
+intants = loadintants(mouseName + "-digIn.npy");
 cd(ori);
 
 figure;
@@ -101,6 +102,8 @@ plot(diff(intants),'b');
 hold on
 plot(diff(dataLap(:,3)),'r');
 hold off
+title("Timestamp Alignment (Before)");
+xlabel("Timestamps"); ylabel("Magnitude of Difference (s)");
 subplot(2,1,2)
 % check timestamp alignment
 dt = diff(dataLap(:,3));
@@ -130,7 +133,9 @@ hold all
 plot(diff(intants),'b');
 plot(diff(dataLap(:,3)),'r');
 hold off
-saveas(gcf,"Preprocess_figures/" + mousename +  "_Timestamp_Alignment.png")
+title("Timestamp Alignment (After)");
+xlabel("Timestamps"); ylabel("Magnitude of Difference (s)");
+saveas(gcf,"Preprocess_figures/" + mouseName +  "_Timestamp_Alignment.png")
 
 dataLap(:,3) = intants;
 
@@ -153,13 +158,13 @@ dataLap(:,1) = fakeLapNo_correction;
 dataLap(logical(fakeLaps_idx),:) = []; % Remove fake laps + first and final incomplete lap from behaviour data
 
 % Bin velocity by position bin per lap
-dataBinned = zeros(nLap*100,6);
+dataBinned = zeros(nLap*nBin,6);
 for i = 1:size(dataBinned,1)
-    lap_no = floor((i-1)/100) + 1;
+    lap_no = floor((i-1)/nBin) + 1;
     dataBinned(i,1) = lap_no; % Lap No.
-    bin_no = mod(i,100);
-    if mod(i,100) == 0
-        bin_no = 100;
+    bin_no = mod(i,nBin);
+    if mod(i,nBin) == 0
+        bin_no = nBin;
     end
     dataBinned(i,2) = bin_no; % Bin No.
     temp_array = dataLap((dataLap(:,1) == lap_no) & (dataLap(:,2) == bin_no),:);
@@ -171,7 +176,7 @@ for i = 1:size(dataBinned,1)
     end
 end
 
-vel_binned = reshape(dataBinned(:,6),[100,nLap])';
+vel_binned = reshape(dataBinned(:,6),[nBin,nLap])';
 
 % Extract reward signals from intan
 digInts_arr = digInts(find(digInts >= dataLap(1,3),1,'first'):find(digInts <= dataLap(end,3),1,'last'));
@@ -193,7 +198,7 @@ intan_reward_pos = intan_pos(find(digIn_arr_ == 1)) / (VRradius*2*pi);
 % % title("Smoothwalk"); ylabel("Distance (cm)");
 % % yline(0.83*VRradius*2*pi,'--');
 % % yyaxis right
-% % plot(timestamp,reward*100,'r')
+% % plot(timestamp,reward,'r')
 % % hold off
 % subplot(2,1,1)
 % hold on
@@ -202,7 +207,7 @@ intan_reward_pos = intan_pos(find(digIn_arr_ == 1)) / (VRradius*2*pi);
 % title("Intan"); ylabel("Distance (cm)");
 % yline(0.83*VRradius*2*pi,'--');
 % yyaxis right
-% plot(digInts_arr,digIn_arr_*100,'r')
+% plot(digInts_arr,digIn_arr_,'r')
 % hold off
 % subplot(2,1,2)
 % plot(dataLap(:,3),dataLap(:,6))
@@ -220,7 +225,7 @@ scatter(intan_reward_ts,intan_reward_pos,'bx'); yline(0.83,'k--');
 mean(intan_reward_pos)
 title("Intan"); xlabel("Time (s)"); ylabel("Reward Position");
 ylim([0 1]);
-saveas(gcf,"Preprocess_figures/" + mousename +  "_Lap_Reward_Position.png")
+saveas(gcf,"Preprocess_figures/" + mouseName +  "_Lap_Reward_Position.png")
 
 % figure;
 % yyaxis left
@@ -249,6 +254,7 @@ saveas(gcf,"Preprocess_figures/" + mousename +  "_Lap_Reward_Position.png")
 
 data.dataLap_all = dataLap_all;
 data.dataLap = dataLap;
+data.dataBinned = dataBinned;
 data.vel_binned = vel_binned;
 data.nonzeroVel_idx = nonzeroVel_idx;
 data.date = fdate;
@@ -261,33 +267,66 @@ save("sess.mat","data",'-v7.3');
 
 % Plot behavioural data
 figure;
+set(gcf, 'Position',  [100, 100, 1500, 500])
 hold all
-subplot(2,1,1)
+% First 10 laps
+start_lap = 1;
+end_lap = 10;
+plot_start_idx = find(dataLap(:,1) == start_lap,1,'first'); 
+plot_end_idx = find(dataLap(:,1) == end_lap,1,'last');
+subplot(2,2,1)
 yyaxis left
-% plot(temp.garr(1:end-1,8),temp.garr(1:end-1,1))
-plot(dataLap(:,3),dataLap(:,5))
+plot(dataLap(plot_start_idx:plot_end_idx,3),dataLap(plot_start_idx:plot_end_idx,5))
 title("Distance (cm)");
 xlabel('Time (s)'); ylabel('Distance (cm)');
-% yline(0.2,'--'); yline(0.65,'--'); 
-% yyaxis right
-% plot(dataLap(:,3),dataLap(:,8)*100,'r')
-subplot(2,1,2)
-plot(dataLap(:,3),dataLap(:,6))
+yline(0.83*VRradius*2*pi,'--');
+yyaxis right
+digInts_arr = digInts(find(digInts >= dataLap(plot_start_idx,3),1,'first'):find(digInts <= dataLap(plot_end_idx,3),1,'last'));
+digIn_arr = digIn(2,find(digInts >= dataLap(plot_start_idx,3),1,'first'):find(digInts <= dataLap(plot_end_idx,3),1,'last'));
+digIn_arr_ = [0 (abs(diff(int8(digIn_arr))))];
+plot(digInts_arr,digIn_arr_,'r')
+ylabel('Reward');
+subplot(2,2,3)
+plot(dataLap(plot_start_idx:plot_end_idx,3),dataLap(plot_start_idx:plot_end_idx,6))
 title("Velocity (cm/s)");
 xlabel('Time (s)'); ylabel('Velocity (cm/s)');
-ylim([-10,40])
+ylim([0,120])
 hold off
-saveas(gcf,"Preprocess_figures/" + mousename +  "_Distance_Velocity.png")
+hold all
+% Last 10 laps
+start_lap = dataLap(end,1) - 9;
+end_lap = dataLap(end,1);
+plot_start_idx = find(dataLap(:,1) == start_lap,1,'first'); 
+plot_end_idx = find(dataLap(:,1) == end_lap,1,'last');
+subplot(2,2,2)
+yyaxis left
+plot(dataLap(plot_start_idx:plot_end_idx,3),dataLap(plot_start_idx:plot_end_idx,5))
+title("Distance (cm)");
+xlabel('Time (s)'); ylabel('Distance (cm)');
+yline(0.83*VRradius*2*pi,'--');
+yyaxis right
+digInts_arr = digInts(find(digInts >= dataLap(plot_start_idx,3),1,'first'):find(digInts <= dataLap(plot_end_idx,3),1,'last'));
+digIn_arr = digIn(2,find(digInts >= dataLap(plot_start_idx,3),1,'first'):find(digInts <= dataLap(plot_end_idx,3),1,'last'));
+digIn_arr_ = [0 (abs(diff(int8(digIn_arr))))];
+plot(digInts_arr,digIn_arr_,'r')
+ylabel('Reward');
+subplot(2,2,4)
+plot(dataLap(plot_start_idx:plot_end_idx,3),dataLap(plot_start_idx:plot_end_idx,6))
+title("Velocity (cm/s)");
+xlabel('Time (s)'); ylabel('Velocity (cm/s)');
+ylim([0,120])
+hold off
+saveas(gcf,"Preprocess_figures/" + mouseName +  "_Distance_Velocity.png")
 
 % Plot position-binned data
 figure;
 imagesc(vel_binned); cbar = colorbar; cbar.Label.String = 'Velocity (cm/s)';
 title("Velocity (cm/s)");
 xlabel('Position (Bins)'); ylabel('Lap');
-saveas(gcf,"Preprocess_figures/" + mousename +  "_Velocity_Binned.png")
+saveas(gcf,"Preprocess_figures/" + mouseName +  "_Velocity_Binned.png")
 
 figure;
-xdat = (1:100)*0.01*VRradius*2*pi;
+xdat = (1:nBin)*0.01*VRradius*2*pi;
 ydat = mean(vel_binned,'omitnan');
 y_std = std(vel_binned,'omitnan');
 plot(xdat,ydat,'k-','LineWidth', 2);
@@ -297,19 +336,14 @@ curve2 = ydat - y_std;
 x2 = [xdat, fliplr(xdat)];
 inBetween = [curve1, fliplr(curve2)];
 fill(x2, inBetween, 'k','FaceAlpha',0.3);
-title(mousename);
+title(mouseName);
 xlabel('Position (cm)'); ylabel('Velocity (cm/s)');
 hold off
-saveas(gcf,"Preprocess_figures/" + mousename +  "_Velocity.png")
+saveas(gcf,"Preprocess_figures/" + mouseName +  "_Velocity.png")
 
 % figure;
-% dur_binned = reshape(dataBinned(:,5),[100,nLap])';
+% dur_binned = reshape(dataBinned(:,5),[nBin,nLap])';
 % imagesc(dur_binned); colorbar;
-
-% behavop_binned_speed = readNPY('MS14A-behavop_binned_speed.npy');
-% test = vel_binned - behavop_binned_speed(1:end-1,:);
-% test(abs(test) < 1e-3) = 0;
-
 
 
 
