@@ -10,11 +10,11 @@ function data = Preprocessing(mouseName,garrFile,intanFolder)
 %% load variables
 
 % mouseName = "MS13B";
-% garrFile = "dis_vel_rew_2024-7-25_19_14_21_MS13B_REC_BASE.mat";
-% intanFolder = 'W:\mouse_chemogenetics\MS13B\MS13B_240725_175414';
+% garrFile = 'dis_vel_rew_2024-7-25_19_14_21_MS13B_REC_BASE.mat';
+% intanFolder = "W:\mouse_chemogenetics\MS13B\MS13B_240725_175414";
 % mouseName = "MS14A";
-% garrFile = "dis_vel_rew_2024-9-6_18_11_35_MS14_REC.mat";
-% intanFolder = 'W:\mouse_chemogenetics\MS14A\MS14A_240906_162727';
+% garrFile = 'dis_vel_rew_2024-9-6_18_11_35_MS14_REC.mat';
+% intanFolder = "W:\mouse_chemogenetics\MS14A\MS14A_240906_162727";
 
 mkdir Preprocess_figures % To store saved figures
 
@@ -217,12 +217,12 @@ intan_reward_pos = intan_pos(find(digIn_arr_ == 1)) / (VRradius*2*pi);
 figure;
 subplot(2,1,1)
 scatter(reward_ts,reward_pos,'bx'); yline(0.83,'k--');
-mean(reward_pos)
+% mean(reward_pos)
 title("Smoothwalk"); xlabel("Time (s)"); ylabel("Reward Position");
 ylim([0 1]);
 subplot(2,1,2)
 scatter(intan_reward_ts,intan_reward_pos,'bx'); yline(0.83,'k--');
-mean(intan_reward_pos)
+% mean(intan_reward_pos)
 title("Intan"); xlabel("Time (s)"); ylabel("Reward Position");
 ylim([0 1]);
 saveas(gcf,"Preprocess_figures/" + mouseName +  "_Lap_Reward_Position.png")

@@ -14,14 +14,14 @@ External:
 NA 
 
 ## Usage
-Preprocessing(mousename,garrfile,intanfolder)
+Preprocessing(mouseName,garrFile,intanFolder)
 
 ## Input
-mousename: name of mouse (string) | e.g. "MS14A"
+mouseName: name of mouse (string) | e.g. "MS14A"
 
-garrfile: name of file where garr mat data is stored (string) | e.g. "dis_vel_rew_2024-7-25_19_14_21_MS13B_REC_BASE.mat"
+garrFile: name of file where garr mat data is stored (string) | e.g. 'dis_vel_rew_2024-7-25_19_14_21_MS13B_REC_BASE.mat'
 
-intanfolder: name of folder where binary intan data is stored (string) | e.g. 'W:\mouse_chemogenetics\MS14A\MS14A_240906_162727'
+intanFolder: name of folder where binary intan data is stored (string) | e.g. 'W:\mouse_chemogenetics\MS14A\MS14A_240906_162727'
 
 ## Output
 
