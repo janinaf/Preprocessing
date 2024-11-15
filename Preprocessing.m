@@ -3,7 +3,7 @@ function data = Preprocessing(mouseName,garrFile,intanFolder)
 % reads garr and intan and saves them as useful variables aligned with the
 % right time stamps
 %   mouseName: name of mouse (string)
-%   garrFile: name of file where garr mat data is stored (string)
+%   garrFile: name of file where garr mat data is stored (char)
 %   intanFolder: name of file where intan data is stored (string)
 % RL 11/2024
 
@@ -58,7 +58,7 @@ objectChanges = garr(:,6);
 
 % Smooth velocity
 vel(vel > 120) = 0; % Remove unusually high velocity values
-vel_smoothed = smoothdata(vel,"gaussian",3);
+vel_smoothed = smoothdata(vel,"movmean",3);
 
 % Redundant variables (for now)
 % pos_enc = garr(:,1); % position in revolutions of wheel (based on rotary encoder)

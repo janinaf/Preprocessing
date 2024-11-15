@@ -19,17 +19,16 @@ Preprocessing(mouseName,garrFile,intanFolder)
 ## Input
 mouseName: name of mouse (string) | e.g. "MS14A"
 
-garrFile: name of file where garr mat data is stored (string) | e.g. 'dis_vel_rew_2024-7-25_19_14_21_MS13B_REC_BASE.mat'
+garrFile: name of file where garr mat data is stored (char) | e.g. 'dis_vel_rew_2024-7-25_19_14_21_MS13B_REC_BASE.mat'
 
-intanFolder: name of folder where binary intan data is stored (string) | e.g. 'W:\mouse_chemogenetics\MS14A\MS14A_240906_162727'
+intanFolder: name of folder where binary intan data is stored (string) | e.g. "W:\mouse_chemogenetics\MS14A\MS14A_240906_162727"
 
 ## Output
 
 Output data automatically saved as "sess.mat" in the same directory as garrfile.
 
 dataLap_all:
-Table containing all behaviour data organised by lap and position bin
-*Timestamps here NOT aligned to Intan
+Table containing all behaviour data organised by lap and position bin. *Timestamps here NOT aligned to Intan
 
 | Column | Variable |
 | ------ | ------ |
@@ -99,3 +98,15 @@ reward:
 11) Extract lick signals from Intan (*NOT DONE YET)
 12) Save processed data as "sess.mat"
 13) Save sanity check figures in "Preprocess_figures" subfolder (same directory as garrfile)
+
+## Interpreting sanity check figures
+Timestamp_Alignment: Checks the alignment of timestamps between Intan and Smoothwalk AFTER zero velocity timestamps have been filtered out, this is done by comparing the differences in timestamps.
+
+Distance_Velocity: Displays track distance, velocity, and reward signals for the first and last 10 complete laps of the session. Horizontal dotted line indicates the expected reward position on the track.
+
+Lap_Reward_Position: Checks the reward position across all laps for both Smoothwalk and Intan. Smoothwalk may be missing a few reward signals. Each point on the scatter plot indicates the reward position for each lap. If either plots do not show the scatterpoints around the horizontal dotted line, this indicates something has gone wrong with the timestamp alignment of extracted reward signals.
+
+Velocity_Binned: Heatmap of average velocity per lap and position bin. We should expect a characteristic drop in velocity as the mice approaches the reward position. Check that there are no unexpected zero/NaN velocity values for some laps, which may indicate the presence of fake laps or errors in the indexing of lap transitions.
+
+Velocity: Plot of mean and standard deviation of velocity averaged across all laps.
+
