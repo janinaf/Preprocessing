@@ -1,17 +1,18 @@
 # Documentation for Preprocessing.m
 
 ## Description
-Organises raw behaviour data from SmoothWalk into individual laps and position bins, as well as align the timestamp with Intan.
+Organises raw behaviour data from SmoothWalk virtual environment into individual laps and position bins, as well as align the timestamp with Intan. 
+SmoothWalk paradigm: animal runs la;s on a circular VR track along which various objects are placed. Reward is delivered at the end of the lap, after which a new lap starts (immediately; after an ITI interval?)   
 
 ## Requirements
 
 SupportScripts:
 
-loadintants.m
+  loadintants.m
 
 External:
 
-NA 
+  NA 
 
 ## Usage
 Preprocessing(mouseName,garrFile,intanFolder)
